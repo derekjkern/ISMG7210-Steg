@@ -1,0 +1,56 @@
+2013-04-26 16:00:26,912 DEBUG pl.edu.zut.wi.vsl.app.utils.FileUtil:246 - mounting user.dir to: /mnt/storage/downloads/stego/sw/vsl-1.1
+2013-04-26 16:00:26,979 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.runtime.name=Java(TM) SE Runtime Environment
+2013-04-26 16:00:26,979 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.version=23.5-b02
+2013-04-26 16:00:26,979 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.vendor=Oracle Corporation
+2013-04-26 16:00:26,980 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vendor.url=http://java.oracle.com/
+2013-04-26 16:00:26,980 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.name=Java HotSpot(TM) Server VM
+2013-04-26 16:00:26,980 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.specification.name=Java Virtual Machine Specification
+2013-04-26 16:00:26,980 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.runtime.version=1.7.0_09-b05
+2013-04-26 16:00:26,980 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.awt.graphicsenv=sun.awt.X11GraphicsEnvironment
+2013-04-26 16:00:26,981 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.endorsed.dirs=/usr/lib/jvm/jdk1.7.0/jre/lib/endorsed
+2013-04-26 16:00:26,981 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.io.tmpdir=/tmp
+2013-04-26 16:00:26,981 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.specification.vendor=Oracle Corporation
+2013-04-26 16:00:26,981 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.library.path=/usr/java/packages/lib/i386:/lib:/usr/lib
+2013-04-26 16:00:26,982 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.specification.name=Java Platform API Specification
+2013-04-26 16:00:26,982 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.class.version=51.0
+2013-04-26 16:00:26,983 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.awt.printerjob=sun.print.PSPrinterJob
+2013-04-26 16:00:26,983 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.specification.version=1.7
+2013-04-26 16:00:26,983 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.class.path=vsl-app-1.1.jar
+2013-04-26 16:00:26,983 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.specification.version=1.7
+2013-04-26 16:00:26,984 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.home=/usr/lib/jvm/jdk1.7.0/jre
+2013-04-26 16:00:26,984 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.specification.vendor=Oracle Corporation
+2013-04-26 16:00:26,984 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.info=mixed mode
+2013-04-26 16:00:26,984 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.version=1.7.0_09
+2013-04-26 16:00:26,984 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.ext.dirs=/usr/lib/jvm/jdk1.7.0/jre/lib/ext:/usr/java/packages/lib/ext
+2013-04-26 16:00:26,985 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vendor=Oracle Corporation
+2013-04-26 16:00:26,985 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vendor.url.bug=http://bugreport.sun.com/bugreport/
+2013-04-26 16:00:26,985 INFO  pl.edu.zut.wi.vsl.app.Main:122 - Handled Java Reader file suffixes: jpg; bmp; jpeg; wbmp; png; gif; 
+2013-04-26 16:00:26,986 INFO  pl.edu.zut.wi.vsl.app.Main:123 - Handled Java Writer file suffixes: jpg; bmp; wbmp; jpeg; png; gif; 
+2013-04-26 16:00:31,468 DEBUG pl.edu.zut.wi.vsl.app.utils.FileUtil:246 - mounting user.dir to: /mnt/storage/downloads/stego/sw/vsl-1.1
+2013-04-26 16:00:31,483 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.runtime.name=Java(TM) SE Runtime Environment
+2013-04-26 16:00:31,483 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.version=23.5-b02
+2013-04-26 16:00:31,483 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.vendor=Oracle Corporation
+2013-04-26 16:00:31,484 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vendor.url=http://java.oracle.com/
+2013-04-26 16:00:31,484 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.name=Java HotSpot(TM) Server VM
+2013-04-26 16:00:31,484 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.specification.name=Java Virtual Machine Specification
+2013-04-26 16:00:31,484 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.runtime.version=1.7.0_09-b05
+2013-04-26 16:00:31,485 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.awt.graphicsenv=sun.awt.X11GraphicsEnvironment
+2013-04-26 16:00:31,485 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.endorsed.dirs=/usr/lib/jvm/jdk1.7.0/jre/lib/endorsed
+2013-04-26 16:00:31,485 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.io.tmpdir=/tmp
+2013-04-26 16:00:31,485 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.specification.vendor=Oracle Corporation
+2013-04-26 16:00:31,486 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.library.path=/usr/java/packages/lib/i386:/lib:/usr/lib
+2013-04-26 16:00:31,486 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.specification.name=Java Platform API Specification
+2013-04-26 16:00:31,486 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.class.version=51.0
+2013-04-26 16:00:31,487 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.awt.printerjob=sun.print.PSPrinterJob
+2013-04-26 16:00:31,487 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.specification.version=1.7
+2013-04-26 16:00:31,487 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.class.path=vsl-app-1.1.jar
+2013-04-26 16:00:31,487 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.specification.version=1.7
+2013-04-26 16:00:31,487 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.home=/usr/lib/jvm/jdk1.7.0/jre
+2013-04-26 16:00:31,488 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.specification.vendor=Oracle Corporation
+2013-04-26 16:00:31,488 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vm.info=mixed mode
+2013-04-26 16:00:31,488 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.version=1.7.0_09
+2013-04-26 16:00:31,488 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.ext.dirs=/usr/lib/jvm/jdk1.7.0/jre/lib/ext:/usr/java/packages/lib/ext
+2013-04-26 16:00:31,489 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vendor=Oracle Corporation
+2013-04-26 16:00:31,489 INFO  pl.edu.zut.wi.vsl.app.Main:119 - java.vendor.url.bug=http://bugreport.sun.com/bugreport/
+2013-04-26 16:00:31,489 INFO  pl.edu.zut.wi.vsl.app.Main:122 - Handled Java Reader file suffixes: jpg; bmp; jpeg; wbmp; png; gif; 
+2013-04-26 16:00:31,490 INFO  pl.edu.zut.wi.vsl.app.Main:123 - Handled Java Writer file suffixes: bmp; jpg; wbmp; jpeg; png; gif; 

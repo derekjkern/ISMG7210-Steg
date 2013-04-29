@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+lftp -e "mirror -R ./database database" -u ismg7210ftp ec2-184-73-43-14.compute-1.amazonaws.com

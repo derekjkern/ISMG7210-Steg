@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+
+require 'tempfile'
+
+cover_dir = "filed/187500px"
+stego_dir = "filed/38400px"
+database_dir = "database"
+
+cover_images = Dir["#{cover_dir}/*.{jpg,jpeg}"]
+stego_images = Dir["#{stego_dir}/*.{jpg,jpeg}"]
+
+databases = ["color", "grayscale"]
+stego_algs = ["lsb", "randomlsb"]
+
+cover_images.each do |cover_image|
+	cover_file = File.absolute_path(cover_image)
+	
+	#Going to use the hashed signature (the file basename) to seed a RNG.  This RNG will be used to make
+	#decisions about what will happen with the image in terms of stego/no stego, formats, etc.  But we
+	#want the same decision made for any given image each time in case we need to re-run the script
+
+	hash = File.basename(cover_file, File.extname(cover_file))
+	seed = hash.to_i(16)
+	rng = Random.new(seed)
+
+	should_stego = rng.rand(0..1)
+
+	database = databases[rng.rand(0..databases.size-1)]
+
+	if(should_stego==1)
+		source_file=cover_file
+		stego_choice = rng.rand(0..stego_images.size-1)
+		stego_file = stego_images[stego_choice]
+
+		stego_alg = stego_algs[rng.rand(0..stego_algs.size-1)]
+		dest_file=File.join(database_dir, "#{hash}.#{database}.stego.#{stego_alg}.png")
+		
+		if database=="grayscale"
+			temp_file=Tempfile.new(["stego", ".png"])
+			`convert -colorspace gray \"#{source_file}\" \"#{temp_file.path}\"`
+			cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{temp_file.path}\" -sf \"#{dest_file}\""
+		else
+			cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{cover_file}\" -sf \"#{dest_file}\""
+		end
+		`#{cmd}`
+
+	else
+		#Convert to png without stego
+		dest_file=File.join(database_dir, "#{hash}.#{database}.nostego.png")
+		source_file=cover_file
+		if database=="grayscale"
+			cmd = "convert -colorspace gray \"#{source_file}\" \"#{dest_file}\""
+		else
+			cmd = "convert \"#{source_file}\" \"#{dest_file}\""			
+		end
+		`#{cmd}`
+	end
+end

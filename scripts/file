@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+require 'find'
+require 'fileutils'
+
+source = ARGV[0]
+target = "filed"
+
+Find.find(source) do |path|
+  begin
+    if not FileTest.directory?(path) and path =~ /\.JPEG|\.JPG|\.GIF|\.PNG|\.TIF|\.TIFF|\.BMP/i
+      data = `identify -verbose "#{path}"`
+      extension = File.extname(path).downcase
+      signature = data.match(/signature: (.*)$/)[1]
+      width, height = data.match(/Geometry: (\d+)x(\d+)/).captures
+      pixels = width.to_i * height.to_i
+      folder = "#{pixels}px"
+      destination_dir = File.join(target, folder)
+      FileUtils.mkdir_p destination_dir
+      destination_filename = "#{signature}#{extension}"
+      full_destination = File.join(destination_dir, destination_filename)
+      FileUtils.cp(path,full_destination)
+      puts "Copied #{path} to #{full_destination}"
+    end
+  rescue Exception => e
+    puts e
+    puts path
+  end
+end
