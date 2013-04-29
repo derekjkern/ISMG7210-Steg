@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+
+cover_dir = "filed_full/187500px"
+partial_dir = "filed/187500px"
+
+subset_size=0.01
+
+cover_images = Dir["#{cover_dir}/*.{jpg,jpeg}"]
+
+cover_images.each do |cover_image|
+	cover_file = File.absolute_path(cover_image)
+	
+	hash = File.basename(cover_file, File.extname(cover_file))
+	seed = hash.to_i(16)
+	rng = Random.new(seed)
+
+	if(rng.rand()<subset_size)
+		target = File.join(partial_dir, File.basename(cover_image))
+		puts target
+		FileUtils.mkdir_p File.absolute_path(partial_dir)
+		FileUtils.cp(cover_file,target)
+		puts "Including #{cover_file}"
+	end
+end
