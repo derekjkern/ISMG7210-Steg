@@ -2,57 +2,137 @@
 
 require 'tempfile'
 
-cover_dir = "filed/187500px"
-stego_dir = "filed/38400px"
-database_dir = "database"
+COVER_DIR = "filed/187500px"
+DATABASE_DIR = "database"
 
-cover_images = Dir["#{cover_dir}/*.{jpg,jpeg}"]
-stego_images = Dir["#{stego_dir}/*.{jpg,jpeg}"]
+def main
+	cover_images = Dir["#{COVER_DIR}/*.{jpg,jpeg}"]
 
-databases = ["color", "grayscale"]
-stego_algs = ["lsb", "randomlsb"]
-
-cover_images.each do |cover_image|
-	cover_file = File.absolute_path(cover_image)
-	
-	#Going to use the hashed signature (the file basename) to seed a RNG.  This RNG will be used to make
-	#decisions about what will happen with the image in terms of stego/no stego, formats, etc.  But we
-	#want the same decision made for any given image each time in case we need to re-run the script
-
-	hash = File.basename(cover_file, File.extname(cover_file))
-	seed = hash.to_i(16)
-	rng = Random.new(seed)
-
-	should_stego = rng.rand(0..1)
-
-	database = databases[rng.rand(0..databases.size-1)]
-
-	if(should_stego==1)
-		source_file=cover_file
-		stego_choice = rng.rand(0..stego_images.size-1)
-		stego_file = stego_images[stego_choice]
-
-		stego_alg = stego_algs[rng.rand(0..stego_algs.size-1)]
-		dest_file=File.join(database_dir, "#{hash}.#{database}.stego.#{stego_alg}.png")
+	cover_images.each do |cover_image|
+		cover_file = File.absolute_path(cover_image)
 		
-		if database=="grayscale"
-			temp_file=Tempfile.new(["stego", ".png"])
-			`convert -colorspace gray \"#{source_file}\" \"#{temp_file.path}\"`
-			cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{temp_file.path}\" -sf \"#{dest_file}\""
-		else
-			cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{cover_file}\" -sf \"#{dest_file}\""
-		end
-		`#{cmd}`
+		#Going to use the hashed signature (the file basename) to seed a RNG.  This RNG will be used to make
+		#decisions about what will happen with the image in terms of stego/no stego, formats, etc.  But we
+		#want the same decision made for any given image each time in case we need to re-run the script
 
-	else
-		#Convert to png without stego
-		dest_file=File.join(database_dir, "#{hash}.#{database}.nostego.png")
-		source_file=cover_file
-		if database=="grayscale"
-			cmd = "convert -colorspace gray \"#{source_file}\" \"#{dest_file}\""
-		else
-			cmd = "convert \"#{source_file}\" \"#{dest_file}\""			
-		end
-		`#{cmd}`
+		hash = File.basename(cover_file, File.extname(cover_file))
+		seed = hash.to_i(16)
+		rng = Random.new(seed)
+
+		should_stego = rng.rand(0..1)
+
+		db(gotham(cover_image), classify(hash, "gotham"))
+		db(toaster(cover_image), classify(hash, "toaster"))
+
+		# database = databases[rng.rand(0..databases.size-1)]
+
+		# if(should_stego==1)
+		# 	source_file=cover_file
+		# 	stego_choice = rng.rand(0..stego_images.size-1)
+		# 	stego_file = stego_images[stego_choice]
+
+		# 	stego_alg = stego_algs[rng.rand(0..stego_algs.size-1)]
+		# 	dest_file=File.join(database_dir, "#{hash}.#{database}.stego.#{stego_alg}.png")
+			
+		# 	if database=="grayscale"
+		# 		temp_file=Tempfile.new(["stego", ".png"])
+		# 		`convert -colorspace gray \"#{source_file}\" \"#{temp_file.path}\"`
+		# 		cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{temp_file.path}\" -sf \"#{dest_file}\""
+		# 	else
+		# 		cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{cover_file}\" -sf \"#{dest_file}\""
+		# 	end
+		# 	`#{cmd}`
+
+		# else
+		# 	#Convert to png without stego
+		# 	dest_file=File.join(database_dir, "#{hash}.#{database}.nostego.png")
+		# 	source_file=cover_file
+		# 	if database=="grayscale"
+		# 		cmd = "convert -colorspace gray \"#{source_file}\" \"#{dest_file}\""
+		# 	else
+		# 		cmd = "convert \"#{source_file}\" \"#{dest_file}\""			
+		# 	end
+		# 	`#{cmd}`
+		# end
 	end
 end
+
+
+def classify(hash, *classifications)
+	"#{hash}.#{classifications.join(".")}.jpg"
+end
+
+def db(input, name)
+	FileUtils.mkdir_p DATABASE_DIR
+	FileUtils.cp(input, File.join(DATABASE_DIR, name))
+	puts "Copying "+input+" into "+name
+end
+
+#Helper methods.  These each should take an image path, perform some kind of manipulation on it using temp files, and return the temp file name.  This way they can be composed together
+
+
+#Most of these are adapted from instagraph https://github.com/webarto/instagraph
+
+def size(input) 
+	info = `identify "#{input}"`
+	width, height = info.match(/(\d+)x(\d+)\+/).captures
+	return width.to_i, height.to_i
+end
+
+def colortone(input, options={})
+	options = {type: 0}.merge(options)
+
+	temp_file = Tempfile.new(["colortone", ".jpg"])
+
+	color = options[:color]
+	args0 = options[:level]
+	args1 = 100 - options[:level]
+	negate = options[:type] == 0 ? "-negate": ""
+
+	`convert "#{input}" -set colorspace RGB \\( -clone 0 -fill '#{color}' -colorize 100% \\) \\( -clone 0 -colorspace gray #{negate} \\) -compose blend -define compose:args=#{args0},#{args1} -composite "#{temp_file.path}"`
+
+	return temp_file.path
+end
+
+def vignette(input, options={}) 
+	options = {color1: "none", color2: "black", crop_factor: 1.5}.merge(options)
+
+	crop_factor = options[:crop_factor]
+
+	width, height = size(input)
+	crop_x = (width*crop_factor).floor
+	crop_y = (height*crop_factor).floor
+
+	color1 = options[:color1]
+	color2 = options[:color2]
+
+	temp_file = Tempfile.new(["toaster", ".jpg"])
+
+	`convert \\( "#{input}" \\) \\( -size #{crop_x}x#{crop_y} radial-gradient:#{color1}-#{color2} -gravity center -crop #{width}x#{height}+0+0 +repage \\) -compose multiply -flatten  "#{temp_file.path}"`
+	temp_file.path
+end
+
+def toaster(input) 
+	toned= colortone(input, :color=>"#330000", :level=>100, :type=>0)
+	temp_file = Tempfile.new(["toaster", ".jpg"])
+	`convert #{toned} -modulate 150,80,100 -gamma 1.2 -contrast -contrast "#{temp_file.path}"`
+
+	first = vignette(temp_file.path, :color1=>"none", :color2=>"LavenderBlush3")
+	vignette(first, :color1=>"#ff9966", :color2=>"none")
+end
+
+def border(input, options={})
+	options = {color: "black", width: 20}.merge(options)
+
+	temp_file = Tempfile.new(["border", ".jpg"])
+	`convert "#{input.path}" -bordercolor #{options[:color]} -border #{options[:width]}x#{options[:width]} "#{temp_file.path}"`
+	return temp_file.path
+end
+
+def gotham(input)
+	temp_file = Tempfile.new(["gotham", ".jpg"])
+	`convert -modulate 120,10,100 -fill '#222b6d' -colorize 20 -gamma 0.5 -contrast -contrast "#{input}" "#{temp_file.path}"`
+	return border(temp_file)
+end
+
+main()
