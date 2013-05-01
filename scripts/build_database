@@ -4,6 +4,12 @@ require 'tempfile'
 
 COVER_DIR = "filed/187500px"
 DATABASE_DIR = "database"
+ASSET_DIR = "scripts/"
+STEGO_FILE = File.join(ASSET_DIR,"war_and_peace.txt")
+
+@stego_data = IO.read(STEGO_FILE)
+@stego_size = 1000000
+$last_stego = -1
 
 def main
 	cover_images = Dir["#{COVER_DIR}/*.{jpg,jpeg}"]
@@ -21,51 +27,44 @@ def main
 
 		should_stego = rng.rand(0..1)
 
-		db(gotham(cover_image), classify(hash, "gotham"))
-		db(toaster(cover_image), classify(hash, "toaster"))
+		images = []
 
-		# database = databases[rng.rand(0..databases.size-1)]
+		images << {:image=>cover_image, :db=>"baseline"}
+		images << {:image=>gotham(cover_image), :db=>"gotham"}
+		# images << {:image=>toaster(cover_image), :db=>"toaster"}
+		# images << {:image=>nashville(cover_image), :db=>"nashville"}
+		# images << {:image=>lomo(cover_image), :db=>"lomo"}
+		# images << {:image=>kelvin(cover_image), :db=>"kelvin"}
+		# images << {:image=>tiltshift(cover_image), :db=>"tiltshift"}	
 
-		# if(should_stego==1)
-		# 	source_file=cover_file
-		# 	stego_choice = rng.rand(0..stego_images.size-1)
-		# 	stego_file = stego_images[stego_choice]
-
-		# 	stego_alg = stego_algs[rng.rand(0..stego_algs.size-1)]
-		# 	dest_file=File.join(database_dir, "#{hash}.#{database}.stego.#{stego_alg}.png")
-			
-		# 	if database=="grayscale"
-		# 		temp_file=Tempfile.new(["stego", ".png"])
-		# 		`convert -colorspace gray \"#{source_file}\" \"#{temp_file.path}\"`
-		# 		cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{temp_file.path}\" -sf \"#{dest_file}\""
-		# 	else
-		# 		cmd = "java -jar sw/openstego-0.5.2/lib/openstego.jar embed -a #{stego_alg} -mf \"#{stego_file}\" -cf \"#{cover_file}\" -sf \"#{dest_file}\""
-		# 	end
-		# 	`#{cmd}`
-
-		# else
-		# 	#Convert to png without stego
-		# 	dest_file=File.join(database_dir, "#{hash}.#{database}.nostego.png")
-		# 	source_file=cover_file
-		# 	if database=="grayscale"
-		# 		cmd = "convert -colorspace gray \"#{source_file}\" \"#{dest_file}\""
-		# 	else
-		# 		cmd = "convert \"#{source_file}\" \"#{dest_file}\""			
-		# 	end
-		# 	`#{cmd}`
-		# end
+		images.each do |image|
+			if(should_stego==1)
+				db(stego(image[:image]), classify(hash, image[:db], "stego", $last_stego))
+			else
+				db(image[:image], classify(hash, image[:db], "cover"))
+			end
+		end
 	end
 end
 
 
-def classify(hash, *classifications)
-	"#{hash}.#{classifications.join(".")}.jpg"
+def classify(hash, db, *classifications)
+	"#{db}/#{hash[0..16]}.#{classifications.join(".")}.jpg"
 end
 
 def db(input, name)
-	FileUtils.mkdir_p DATABASE_DIR
-	FileUtils.cp(input, File.join(DATABASE_DIR, name))
-	puts "Copying "+input+" into "+name
+	path = File.join(DATABASE_DIR, name)
+	FileUtils.mkdir_p File.dirname(path)
+	FileUtils.cp(input, path)
+	puts "Saving "+name
+end
+
+def convert(input, command) 
+	temp_file = Tempfile.new(["im_convert", ".jpg"])
+
+	`convert "#{input}" #{command} "#{temp_file.path}"`
+
+	return temp_file.path
 end
 
 #Helper methods.  These each should take an image path, perform some kind of manipulation on it using temp files, and return the temp file name.  This way they can be composed together
@@ -79,6 +78,53 @@ def size(input)
 	return width.to_i, height.to_i
 end
 
+def lomo(input)
+	converted = convert input, "-channel R -level 33% -channel G -level 33%"
+	vignette converted
+end
+
+def frame(input, frame) 
+	    framefile = File.join(ASSET_DIR, frame)
+	    width, height = size(input)
+    convert input, "\\( #{framefile} -resize #{width}x#{height}! -unsharp 1.5x1.0+1.5+0.02 \\) -flatten"
+end
+
+def stego(input) 
+	#outguess needs this to be a jpg instead of jpeg. dumb, whatever.
+	cover_file = Tempfile.new(["cover", ".jpg"])
+	FileUtils.cp(input, cover_file)
+
+
+	temp_file = Tempfile.new(["stego", ".jpg"])
+	message_file = Tempfile.new(["message",".txt"])
+
+	result_code = 1
+	stego_size = @stego_size
+
+	while(result_code != 0) do
+		stego_size = (stego_size * 0.9).to_i
+		$last_stego = stego_size
+		File.open(message_file, 'w') do |file| 
+			file.write(@stego_data[0..stego_size])
+		end
+
+		cmd = "outguess -p 100 -d \"#{message_file.path}\" \"#{cover_file.path}\" \"#{temp_file.path}\" 2>&1"
+
+		result = `#{cmd}`
+		result_code = $?.to_i
+	end
+
+	temp_file.path
+	
+end
+
+def nashville(input) 
+	first = colortone(input, :color=>"#222b6d", :level=>100, :type=>0)
+	second = colortone(first, :color=>"#f7daae", :level=>100, :type=>1)
+	nashvilled = convert second, "-contrast -modulate 100,150,100 -auto-gamma"
+	frame nashvilled, "Nashville"
+end
+
 def colortone(input, options={})
 	options = {type: 0}.merge(options)
 
@@ -89,9 +135,7 @@ def colortone(input, options={})
 	args1 = 100 - options[:level]
 	negate = options[:type] == 0 ? "-negate": ""
 
-	`convert "#{input}" -set colorspace RGB \\( -clone 0 -fill '#{color}' -colorize 100% \\) \\( -clone 0 -colorspace gray #{negate} \\) -compose blend -define compose:args=#{args0},#{args1} -composite "#{temp_file.path}"`
-
-	return temp_file.path
+	convert(input, "-set colorspace RGB \\( -clone 0 -fill '#{color}' -colorize 100% \\) \\( -clone 0 -colorspace gray #{negate} \\) -compose blend -define compose:args=#{args0},#{args1} -composite ")
 end
 
 def vignette(input, options={}) 
@@ -112,27 +156,39 @@ def vignette(input, options={})
 	temp_file.path
 end
 
+def kelvin(input)
+	width, height = size(input)
+
+	temp_file = Tempfile.new(["kelvin", ".jpg"])
+
+	`convert \\( "#{input}" -auto-gamma -modulate 120,50,100 \\)  \\( -size #{width}x#{height} -fill rgba\\(255,153,0,0.5\\) -draw 'rectangle 0,0 #{width},#{height}' \\) -compose multiply "#{temp_file.path}"`
+	frame temp_file.path, "Kelvin"
+end
+
+def tiltshift(input)
+
+		temp_file = Tempfile.new(["tiltshift", ".jpg"])
+	`convert \\( "#{input}" -gamma 0.75 -modulate 100,130 -contrast \\) \\( +clone -sparse-color Barycentric '0,0 black 0,%h white' -function polynomial 4,-4,1 -level 0,50% \\) -compose blur -set option:compose:args 5 -composite "#{temp_file.path}"`
+     temp_file.path
+end
+
 def toaster(input) 
 	toned= colortone(input, :color=>"#330000", :level=>100, :type=>0)
-	temp_file = Tempfile.new(["toaster", ".jpg"])
-	`convert #{toned} -modulate 150,80,100 -gamma 1.2 -contrast -contrast "#{temp_file.path}"`
+	toasted = convert(toned, "-modulate 150,80,100 -gamma 1.2 -contrast -contrast")
 
-	first = vignette(temp_file.path, :color1=>"none", :color2=>"LavenderBlush3")
+	first = vignette(toasted, :color1=>"none", :color2=>"LavenderBlush3")
 	vignette(first, :color1=>"#ff9966", :color2=>"none")
 end
 
 def border(input, options={})
 	options = {color: "black", width: 20}.merge(options)
 
-	temp_file = Tempfile.new(["border", ".jpg"])
-	`convert "#{input.path}" -bordercolor #{options[:color]} -border #{options[:width]}x#{options[:width]} "#{temp_file.path}"`
-	return temp_file.path
+	convert input, "-bordercolor #{options[:color]} -border #{options[:width]}x#{options[:width]}"
 end
 
 def gotham(input)
 	temp_file = Tempfile.new(["gotham", ".jpg"])
-	`convert -modulate 120,10,100 -fill '#222b6d' -colorize 20 -gamma 0.5 -contrast -contrast "#{input}" "#{temp_file.path}"`
-	return border(temp_file)
+	border convert input, "-modulate 120,10,100 -fill '#222b6d' -colorize 20 -gamma 0.5 -contrast -contrast"
 end
 
 main()
