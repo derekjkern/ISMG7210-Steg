@@ -5,7 +5,7 @@ import sys
 #
 # Process the incoming arguments and options
 #
-options, files_to_process = getopt.getopt( sys.argv[1:], "s:p:t:n:h?" )
+options, files_to_process = getopt.getopt( sys.argv[1:], "s:p:t:n:c:h?" )
 
 #
 # Turn the options into a dictionary
@@ -20,21 +20,22 @@ if "-h" in options or "-?" in options:
     print "  Command Line:  python pyStegdetect.py  [options]  <files>"
     print ""
     print "  Options:"
-    print "    -h         = Display this help"
-    print "    -?         = Display this help"
-    print "    -s <float> = The initial sensitivity for stegdetect (default: 1.0)"
-    print "    -p <float> = The step to be added to sensitivity after each iteration"
-    print "                 (default: 0.4)"
-    print "    -n <int>   = The number of data points on the ROC to capture"
-    print "                 (default: 10)"
-    print "    -t <chars> = The tests to run during analysis (default: o)."
-    print "                   Tests:"
-    print "                     j - jsteg"
-    print "                     o - outguess"
-    print "                     p - jphide"
-    print "                     i - invisible secrets"
-    print "                     f - F5"
-    print "                     a - camoflage"
+    print "    -h            = Display this help"
+    print "    -?            = Display this help"
+    print "    -s <float>    = The initial sensitivity for stegdetect (default: 1.0)"
+    print "    -p <float>    = The step to be added to sensitivity after each iteration"
+    print "                    (default: 0.4)"
+    print "    -n <int>      = The number of data points on the ROC to capture"
+    print "                    (default: 10)"
+    print "    -t <chars>    = The tests to run during analysis (default: o)."
+    print "                    Tests:"
+    print "                      j - jsteg"
+    print "                      o - outguess"
+    print "                      p - jphide"
+    print "                      i - invisible secrets"
+    print "                      f - F5"
+    print "                      a - camoflage"
+    print "    -c <filename> = Save the ROC coordinates within a CSV file."
     print ""
     print "  Notes:"
     print "    - The files passed may either be a series of file names or a wildcard,"
@@ -118,14 +119,41 @@ for i in range( 0, number_of_steps ):
     )
 
 #
+# Add first and last data points
+#
+data['points'] = [ ( 0.0, 0.0 ) ] + data['points'] + [ ( 1.0, 1.0 ) ]
+
+#
 # Calculate AUC using all of the data points
 #
 G = 0
 for k in range( 1, len( data['points'] ) ):
     G += ( data['points'][k][0] - data['points'][k - 1][0] ) * ( data['points'][k][1] + data['points'][k - 1][1] )
-data['AUC'] = ( 2.0 - G ) / 2.0
+data['AUC'] = 1 - ( ( 2.0 - G ) / 2.0 )
 
 #
 # Finally, output the data
 #
-print data
+if "-c" not in options:
+    print data
+else:
+    #
+    # First, simply output the AUC
+    #
+    print "AUC =", data['AUC']
+
+    #
+    # Next, write the data points to a CSV file
+    #
+    roc_file = open( options['-c'], "wb" )
+    try:
+        for k in range( 0, len( data['points'] ) ):
+            #
+            # Write each data point with a tab between
+            #
+            roc_file.write( str( data['points'][k][0] ) + "\t" + str( data['points'][k][1] ) + "\n" )
+    finally:
+        #
+        # Make sure that the file gets closed.
+        #
+        roc_file.close()
