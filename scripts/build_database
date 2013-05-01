@@ -5,10 +5,10 @@ require 'tempfile'
 COVER_DIR = "filed/187500px"
 DATABASE_DIR = "database"
 ASSET_DIR = "scripts/"
-STEGO_FILE = File.join(ASSET_DIR,"war_and_peace.txt")
 
-@stego_data = IO.read(STEGO_FILE)
-@stego_size = 1000000
+STEGO_FILE = File.join(ASSET_DIR,"war_and_peace.txt")
+STEGO_DATA = IO.read(STEGO_FILE)
+STEGO_START_SIZE = 5000
 $last_stego = -1
 
 def main
@@ -25,7 +25,7 @@ def main
 		seed = hash.to_i(16)
 		rng = Random.new(seed)
 
-		should_stego = rng.rand(0..1)
+		#should_stego = rng.rand(0..1)
 
 		images = []
 
@@ -38,18 +38,15 @@ def main
 		# images << {:image=>tiltshift(cover_image), :db=>"tiltshift"}	
 
 		images.each do |image|
-			if(should_stego==1)
-				db(stego(image[:image]), classify(hash, image[:db], "stego", $last_stego))
-			else
-				db(image[:image], classify(hash, image[:db], "cover"))
-			end
+			db(stego(image[:image]), classify(hash, image[:db], "stego"))
+			db(image[:image], classify(hash, image[:db], "cover"))
 		end
 	end
 end
 
 
-def classify(hash, db, *classifications)
-	"#{db}/#{hash[0..16]}.#{classifications.join(".")}.jpg"
+def classify(hash, db, category, *classifications)
+	"#{db}/#{category}/#{hash[0..16]}.jpg"
 end
 
 def db(input, name)
@@ -99,20 +96,31 @@ def stego(input)
 	message_file = Tempfile.new(["message",".txt"])
 
 	result_code = 1
-	stego_size = @stego_size
+	stego_size = STEGO_START_SIZE
+	attempts = 0
+	decay_rate = 0.01
+	$last_stego = 0
 
 	while(result_code != 0) do
-		stego_size = (stego_size * 0.9).to_i
-		$last_stego = stego_size
+		stego_size = (STEGO_START_SIZE * (1-(decay_rate*attempts))).round.to_i
+		#puts "Trying #{stego_size}"
 		File.open(message_file, 'w') do |file| 
-			file.write(@stego_data[0..stego_size])
+			file.write(STEGO_DATA[0..stego_size])
 		end
 
 		cmd = "outguess -p 100 -d \"#{message_file.path}\" \"#{cover_file.path}\" \"#{temp_file.path}\" 2>&1"
 
 		result = `#{cmd}`
+		# puts result
 		result_code = $?.to_i
+		# puts "return: "+result_code.to_s
+		attempts = attempts +1
+		$last_stego = stego_size
 	end
+
+	puts "Worked at #{$last_stego}"
+
+	$last_stego = stego_size
 
 	temp_file.path
 	
