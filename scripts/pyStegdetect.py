@@ -24,10 +24,10 @@ if "-h" in options or "-?" in options:
     print "    -?            = Display this help"
     print "    -s <float>    = The initial sensitivity for stegdetect (default: 1.0)"
     print "    -p <float>    = The step to be added to sensitivity after each iteration"
-    print "                    (default: 0.4)"
+    print "                    (default: 0.1)"
     print "    -n <int>      = The number of data points on the ROC to capture"
     print "                    (default: 10)"
-    print "    -t <chars>    = The tests to run during analysis (default: o)."
+    print "    -t <chars>    = The tests to run during analysis (default: p)."
     print "                    Tests:"
     print "                      j - jsteg"
     print "                      o - outguess"
@@ -51,9 +51,9 @@ if "-h" in options or "-?" in options:
 # Setup defaults
 #
 sensitivity = 1.0 if "-s" not in options else float( options['-s'] )
-step = 0.4 if "-p" not in options else float( options['-p'] )
+step = 0.1 if "-p" not in options else float( options['-p'] )
 number_of_steps = 10 if "-n" not in options else int( options['-n'] )
-tests = "o" if "-t" not in options else options['-t']
+tests = "p" if "-t" not in options else options['-t']
 
 #
 # Hold the ROC curve data points and the AUC
