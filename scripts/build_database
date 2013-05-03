@@ -99,7 +99,7 @@ def db(input, name)
 end
 
 def convert(input, command) 
-	`convert "#{input}" #{command} "#{@tempfile}"`
+	`convert "#{input}" -set colorspace RGB #{command} "#{@tempfile}"`
 
 	return @tempfile
 end
