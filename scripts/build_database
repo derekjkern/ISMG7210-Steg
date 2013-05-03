@@ -8,8 +8,7 @@ ASSET_DIR = "scripts/"
 
 STEGO_FILE = File.join(ASSET_DIR,"war_and_peace.txt")
 STEGO_DATA = IO.read(STEGO_FILE)
-STEGO_START_SIZE = 5000
-$last_stego = -1
+STEGO_SIZE = 4687
 
 @tempfile = "temp.jpg"
 
@@ -27,7 +26,7 @@ def main
 		seed = hash.to_i(16)
 		rng = Random.new(seed)
 
-		#should_stego = rng.rand(0..1)
+		should_stego = rng.rand(0..1)
 
 		filters = {}
 
@@ -35,48 +34,55 @@ def main
 		filters[:baseline] = Proc.new { |i| baseline(i) }
 	
 		#Our conversions
-		filters[:noise] = Proc.new { |i| noise(i) }
+		# filters[:noise] = Proc.new { |i| noise(i) }
 		filters[:emboss] = Proc.new { |i| emboss(i) }
-		filters[:blur] = Proc.new {|i| blur(i) }
-		filters[:saturate] = Proc.new {|i| saturate(i)}
-		filters[:contrast] = Proc.new {|i| contrast(i)}
-		filters[:sigmoidal] = Proc.new {|i| sigmoidal(i)}
+		# filters[:blur] = Proc.new {|i| blur(i) }
+		# filters[:saturate] = Proc.new {|i| saturate(i)}
+		# filters[:contrast] = Proc.new {|i| contrast(i)}
+		# filters[:sigmoidal] = Proc.new {|i| sigmoidal(i)}
 		
 		#Fred's Imagemagick Scripts http://www.fmwconcepts.com/imagemagick
-		filters[:cartoon] = Proc.new {|i| cartoon(i)}
+		# filters[:cartoon] = Proc.new {|i| cartoon(i)}
 		filters[:filmgrain] = Proc.new {|i| filmgrain(i)}
-		filters[:vintage3] = Proc.new {|i| vintage3(i)}
-		filters[:vintage1] = Proc.new {|i| vintage1(i)}
-		filters[:toycamera] = Proc.new {|i| toycamera(i)}
-		filters[:sketch] = Proc.new {|i| sketch(i)}
-		filters[:posteredges] = Proc.new {|i| posteredges(i)}
-		filters[:pixelize] = Proc.new {|i| pixelize(i)}
-		filters[:nightvision] = Proc.new {|i| nightvision(i)}
-		filters[:lichtenstein] = Proc.new {|i| lichtenstein(i)}
-		filters[:sharpedge] = Proc.new {|i| sharpedge(i)}
-		filters[:lucisarteffect] = Proc.new {|i| lucisarteffect(i)}
+		# filters[:vintage3] = Proc.new {|i| vintage3(i)}
+		# filters[:vintage1] = Proc.new {|i| vintage1(i)}
+		# filters[:toycamera] = Proc.new {|i| toycamera(i)}
+		# filters[:sketch] = Proc.new {|i| sketch(i)}
+		# filters[:posteredges] = Proc.new {|i| posteredges(i)}
+		# filters[:pixelize] = Proc.new {|i| pixelize(i)}
+		# filters[:nightvision] = Proc.new {|i| nightvision(i)}
+		# filters[:lichtenstein] = Proc.new {|i| lichtenstein(i)}
+		# filters[:sharpedge] = Proc.new {|i| sharpedge(i)}
+		# filters[:lucisarteffect] = Proc.new {|i| lucisarteffect(i)}
 
 		#Instagraph Scripts https://github.com/webarto/instagraph
 		filters[:gotham] = Proc.new { |i| gotham(i) }
-		filters[:toaster] = Proc.new { |i| toaster(i) }
-		filters[:nashville] = Proc.new { |i| nashville(i) }
-		filters[:lomo] = Proc.new { |i| lomo(i) }
-		filters[:kelvin] = Proc.new { |i| kelvin(i) }
-		filters[:tiltshift] = Proc.new { |i| tiltshift(i) }
-
-		#TODO: inefficient, this regens the filtered cover this way.  careful fixing this, the same temp file is passed around, so if you "db" after both are done, the first is destroyed. Possible to fix by just reversing order?  Nonstego image goes first?
+		# filters[:toaster] = Proc.new { |i| toaster(i) }
+		# filters[:nashville] = Proc.new { |i| nashville(i) }
+		# filters[:lomo] = Proc.new { |i| lomo(i) }
+		# filters[:kelvin] = Proc.new { |i| kelvin(i) }
+		# filters[:tiltshift] = Proc.new { |i| tiltshift(i) }
 
 		filters.each do |db, proc|
-			db(stego(proc.call(cover_image)), classify(hash, db, "stego"))
-			db(proc.call(cover_image), classify(hash, db, "cover"))
-			puts "Saving #{db}/\{stego,cover\}/#{hash[0..16]}.jpg. Stego size #{$last_stego}"
+			if(should_stego == 1)
+				name = classify(hash, db, "stego")
+				db(stego(proc.call(cover_image)), name)
+				puts "Saving #{name}"
+			else
+				name = classify(hash, db, "cover")
+				db(proc.call(cover_image), name)
+				puts "Saving #{name}"
+			end
+
+			# db(stego(proc.call(cover_image)), classify(hash, db, "stego"))
+			# db(proc.call(cover_image), classify(hash, db, "cover"))
 		end
 	end
 end
 
 
-def classify(hash, db, category, *classifications)
-	"#{db}/#{category}/#{hash[0..16]}.jpg"
+def classify(hash, db, *classifications)
+	"#{db}/#{hash[0..16]}.#{classifications.join(".")}.jpg"
 end
 
 def db(input, name)
@@ -124,38 +130,39 @@ def stego(input)
 	FileUtils.cp(input, cover_file)
 
 
-	temp_file = Tempfile.new(["stego", ".jpg"])
-	message_file = Tempfile.new(["message",".txt"])
+	# temp_file = Tempfile.new(["stego", ".jpg"])
+	# message_file = Tempfile.new(["message",".txt"])
 
-	result_code = 1
-	stego_size = STEGO_START_SIZE
-	attempts = 0
-	decay_rate = 0.01
-	$last_stego = 0
+	# result_code = 1
+	# stego_size = STEGO_START_SIZE
+	# attempts = 0
+	# decay_rate = 0.01
+	# $last_stego = 0
 
-	while(result_code != 0) do
-		stego_size = (STEGO_START_SIZE * (1-(decay_rate*attempts))).round.to_i
-		#puts "Trying #{stego_size}"
-		File.open(message_file, 'w') do |file| 
-			file.write(STEGO_DATA[0..stego_size])
-		end
+	# while(result_code != 0) do
+	# 	stego_size = (STEGO_START_SIZE * (1-(decay_rate*attempts))).round.to_i
+	# 	#puts "Trying #{stego_size}"
+	# 	File.open(message_file, 'w') do |file| 
+	# 		file.write(STEGO_DATA[0..stego_size])
+	# 	end
 
-		cmd = "outguess -p 100 -d \"#{message_file.path}\" \"#{cover_file.path}\" \"#{temp_file.path}\" 2>&1"
+	# 	cmd = "outguess -p 100 -d \"#{message_file.path}\" \"#{cover_file.path}\" \"#{temp_file.path}\" 2>&1"
 
-		result = `#{cmd}`
-		# puts result
-		result_code = $?.to_i
-		# puts "return: "+result_code.to_s
-		attempts = attempts +1
-		$last_stego = stego_size
-	end
+	# 	result = `#{cmd}`
+	# 	# puts result
+	# 	result_code = $?.to_i
+	# 	# puts "return: "+result_code.to_s
+	# 	attempts = attempts +1
+	# 	$last_stego = stego_size
+	# end
 
-	# print "(Stego #{$last_stego}) "
-	# $stdout.flush
+	# # print "(Stego #{$last_stego}) "
+	# # $stdout.flush
 
-	$last_stego = stego_size
+	# $last_stego = stego_size
 
-	temp_file.path
+	# temp_file.path
+	input
 	
 end
 
