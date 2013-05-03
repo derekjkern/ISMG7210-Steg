@@ -8,8 +8,15 @@ ASSET_DIR = "scripts/"
 
 STEGO_FILE = File.join(ASSET_DIR,"war_and_peace.txt")
 STEGO_DATA = IO.read(STEGO_FILE)
-STEGO_START_SIZE = 5000
-$last_stego = -1
+STEGO_SIZE = 4500
+
+@message_file = "message.txt"
+
+File.open(@message_file, 'w') do |file| 
+	file.write(STEGO_DATA[0..STEGO_SIZE])
+end
+
+@tempfile = "temp.jpg"
 
 def main
 	cover_images = Dir["#{COVER_DIR}/*.{jpg,jpeg}"]
@@ -25,43 +32,80 @@ def main
 		seed = hash.to_i(16)
 		rng = Random.new(seed)
 
-		#should_stego = rng.rand(0..1)
+		should_stego = rng.rand(0..1)
 
-		images = []
+		filters = {}
 
-		images << {:image=>cover_image, :db=>"baseline"}
-		images << {:image=>gotham(cover_image), :db=>"gotham"}
-		# images << {:image=>toaster(cover_image), :db=>"toaster"}
-		# images << {:image=>nashville(cover_image), :db=>"nashville"}
-		# images << {:image=>lomo(cover_image), :db=>"lomo"}
-		# images << {:image=>kelvin(cover_image), :db=>"kelvin"}
-		# images << {:image=>tiltshift(cover_image), :db=>"tiltshift"}	
 
-		images.each do |image|
-			db(stego(image[:image]), classify(hash, image[:db], "stego"))
-			db(image[:image], classify(hash, image[:db], "cover"))
+		filters[:baseline] = Proc.new { |i| baseline(i) }
+	
+		#Our conversions
+		filters[:noise] = Proc.new { |i| noise(i) }
+		filters[:emboss] = Proc.new { |i| emboss(i) }
+		# filters[:blur] = Proc.new {|i| blur(i) }
+		# filters[:saturate] = Proc.new {|i| saturate(i)}
+		# filters[:contrast] = Proc.new {|i| contrast(i)}
+		# filters[:sigmoidal] = Proc.new {|i| sigmoidal(i)}
+		
+		#Fred's Imagemagick Scripts http://www.fmwconcepts.com/imagemagick
+		# filters[:cartoon] = Proc.new {|i| cartoon(i)}
+		# filters[:filmgrain] = Proc.new {|i| filmgrain(i)}
+		# filters[:vintage3] = Proc.new {|i| vintage3(i)}
+		# filters[:vintage1] = Proc.new {|i| vintage1(i)}
+		# filters[:toycamera] = Proc.new {|i| toycamera(i)}
+		# filters[:sketch] = Proc.new {|i| sketch(i)}
+		# filters[:posteredges] = Proc.new {|i| posteredges(i)}
+		# filters[:pixelize] = Proc.new {|i| pixelize(i)}
+		# filters[:nightvision] = Proc.new {|i| nightvision(i)}
+		# filters[:lichtenstein] = Proc.new {|i| lichtenstein(i)}
+		# filters[:sharpedge] = Proc.new {|i| sharpedge(i)}
+		# filters[:lucisarteffect] = Proc.new {|i| lucisarteffect(i)}
+
+		#Instagraph Scripts https://github.com/webarto/instagraph
+		filters[:gotham] = Proc.new { |i| gotham(i) }
+		# filters[:toaster] = Proc.new { |i| toaster(i) }
+		# filters[:nashville] = Proc.new { |i| nashville(i) }
+		# filters[:lomo] = Proc.new { |i| lomo(i) }
+		# filters[:kelvin] = Proc.new { |i| kelvin(i) }
+		# filters[:tiltshift] = Proc.new { |i| tiltshift(i) }
+
+		filters.each do |db, proc|
+			if(should_stego == 1)
+				name = classify(hash, db, "stego")
+				db(stego(proc.call(cover_image)), name)
+				puts "Saving #{name}"
+			else
+				name = classify(hash, db, "cover")
+				db(proc.call(cover_image), name)
+				puts "Saving #{name}"
+			end
+
+			# db(stego(proc.call(cover_image)), classify(hash, db, "stego"))
+			# db(proc.call(cover_image), classify(hash, db, "cover"))
 		end
 	end
 end
 
 
-def classify(hash, db, category, *classifications)
-	"#{db}/#{category}/#{hash[0..16]}.jpg"
+def classify(hash, db, *classifications)
+	"#{db}/#{hash[0..16]}.#{classifications.join(".")}.jpg"
 end
 
 def db(input, name)
 	path = File.join(DATABASE_DIR, name)
 	FileUtils.mkdir_p File.dirname(path)
 	FileUtils.cp(input, path)
-	puts "Saving "+name
+	#puts "Saving "+name
 end
 
 def convert(input, command) 
-	temp_file = Tempfile.new(["im_convert", ".jpg"])
+	`convert "#{input}" #{command} "#{@tempfile}"`
 
-	`convert "#{input}" #{command} "#{temp_file.path}"`
+	return @tempfile
+end
 
-	return temp_file.path
+def baseline(input)
+	input
 end
 
 #Helper methods.  These each should take an image path, perform some kind of manipulation on it using temp files, and return the temp file name.  This way they can be composed together
@@ -87,48 +131,106 @@ def frame(input, frame)
 end
 
 def stego(input) 
-	#outguess needs this to be a jpg instead of jpeg. dumb, whatever.
+	#Steghide's "output to sf" option doesn't work for me, so I'm copying the file so it can overwrite it
 	cover_file = Tempfile.new(["cover", ".jpg"])
 	FileUtils.cp(input, cover_file)
 
+	res = `steghide embed -cf \"#{input}" -ef #{@message_file} -p "guvf pynff fhpxf"`
 
-	temp_file = Tempfile.new(["stego", ".jpg"])
-	message_file = Tempfile.new(["message",".txt"])
+	cover_file.path
+end
 
-	result_code = 1
-	stego_size = STEGO_START_SIZE
-	attempts = 0
-	decay_rate = 0.01
-	$last_stego = 0
+def noise(input)
+	#This would never pass visual inspection
+	#convert input, "+noise Impulse"
+	width, height = size(input)
+	convert input, "\\( -size #{width}x#{height} xc:\"gray(50%)\" -seed 1000 +noise random -channel green -separate +channel \\) +swap -compose Mathematics -define compose:args=\"0,1,0.15,-0.075\" -composite "
+end
 
-	while(result_code != 0) do
-		stego_size = (STEGO_START_SIZE * (1-(decay_rate*attempts))).round.to_i
-		#puts "Trying #{stego_size}"
-		File.open(message_file, 'w') do |file| 
-			file.write(STEGO_DATA[0..stego_size])
-		end
+def cartoon(input)
+    `scripts/cartoon -p 80 -e 4 -n 6 "#{input}" "#{@tempfile}"`
+	@tempfile
+end
 
-		cmd = "outguess -p 100 -d \"#{message_file.path}\" \"#{cover_file.path}\" \"#{temp_file.path}\" 2>&1"
+def filmgrain(input)
+    puts `scripts/filmgrain "#{input}" -a 100 -A 50 -d 100 -D 100 "#{@tempfile}"`
+	@tempfile
+end
 
-		result = `#{cmd}`
-		# puts result
-		result_code = $?.to_i
-		# puts "return: "+result_code.to_s
-		attempts = attempts +1
-		$last_stego = stego_size
-	end
+def vintage1(input)
+    `scripts/vintage1 "#{input}" "#{@tempfile}"`
+	@tempfile
+end
 
-	puts "Worked at #{$last_stego}"
+def vintage3(input)
+    `scripts/vintage3 "#{input}" "#{@tempfile}"`
+	@tempfile
+end
 
-	$last_stego = stego_size
+def sketch(input)
+    `scripts/sketch "#{input}" "#{@tempfile}"`
+	@tempfile
+end
 
-	temp_file.path
-	
+def posteredges(input)
+    `scripts/posteredges "#{input}" "#{@tempfile}"`
+	@tempfile
+end
+
+def nightvision(input)
+    `scripts/nightvision "#{input}" "#{@tempfile}"`
+	@tempfile
+end
+
+def toycamera(input)
+    `scripts/toycamera "#{input}" "#{@tempfile}"`
+	@tempfile
+end
+
+def lichtenstein(input)
+    `scripts/lichtenstein "#{input}" "#{@tempfile}"`
+	@tempfile
+end
+
+def sharpedge(input)
+    `scripts/sharpedge "#{input}" "#{@tempfile}" 2>&1`
+	@tempfile
+end
+
+def lucisarteffect(input)
+    `scripts/lucisarteffect "#{input}" "#{@tempfile}"`
+	@tempfile
+end
+
+def pixelize(input)
+    `scripts/pixelize "#{input}" "#{@tempfile}"`
+	@tempfile
+end
+
+
+def blur(input) 
+ 	convert input, "-blur 0x6"
+end
+
+def emboss(input)
+	convert input, "-emboss 0x1"
+end
+
+def saturate(input)
+	convert input, " -colorspace HSL -channel Saturation -negate -evaluate multiply 0.8 -negate -colorspace RGB "
+end
+
+def contrast(input)
+	convert input, "-contrast-stretch 30%"
+end
+
+def sigmoidal(input)
+	convert input, "-sigmoidal-contrast 10,50%"
 end
 
 def nashville(input) 
-	first = colortone(input, :color=>"#222b6d", :level=>100, :type=>0)
-	second = colortone(first, :color=>"#f7daae", :level=>100, :type=>1)
+	first = colortone input, :color=>"#222b6d", :level=>100, :type=>0
+	second = colortone first, :color=>"#f7daae", :level=>100, :type=>1
 	nashvilled = convert second, "-contrast -modulate 100,150,100 -auto-gamma"
 	frame nashvilled, "Nashville"
 end
@@ -136,14 +238,12 @@ end
 def colortone(input, options={})
 	options = {type: 0}.merge(options)
 
-	temp_file = Tempfile.new(["colortone", ".jpg"])
-
 	color = options[:color]
 	args0 = options[:level]
 	args1 = 100 - options[:level]
 	negate = options[:type] == 0 ? "-negate": ""
 
-	convert(input, "-set colorspace RGB \\( -clone 0 -fill '#{color}' -colorize 100% \\) \\( -clone 0 -colorspace gray #{negate} \\) -compose blend -define compose:args=#{args0},#{args1} -composite ")
+	convert input, "-set colorspace RGB \\( -clone 0 -fill '#{color}' -colorize 100% \\) \\( -clone 0 -colorspace gray #{negate} \\) -compose blend -define compose:args=#{args0},#{args1} -composite "
 end
 
 def vignette(input, options={}) 
@@ -158,26 +258,21 @@ def vignette(input, options={})
 	color1 = options[:color1]
 	color2 = options[:color2]
 
-	temp_file = Tempfile.new(["toaster", ".jpg"])
 
-	`convert \\( "#{input}" \\) \\( -size #{crop_x}x#{crop_y} radial-gradient:#{color1}-#{color2} -gravity center -crop #{width}x#{height}+0+0 +repage \\) -compose multiply -flatten  "#{temp_file.path}"`
-	temp_file.path
+	`convert \\( "#{input}" \\) \\( -size #{crop_x}x#{crop_y} radial-gradient:#{color1}-#{color2} -gravity center -crop #{width}x#{height}+0+0 +repage \\) -compose multiply -flatten  "#{@tempfile}"`
+	@tempfile
 end
 
 def kelvin(input)
 	width, height = size(input)
 
-	temp_file = Tempfile.new(["kelvin", ".jpg"])
-
-	`convert \\( "#{input}" -auto-gamma -modulate 120,50,100 \\)  \\( -size #{width}x#{height} -fill rgba\\(255,153,0,0.5\\) -draw 'rectangle 0,0 #{width},#{height}' \\) -compose multiply "#{temp_file.path}"`
-	frame temp_file.path, "Kelvin"
+	`convert \\( "#{input}" -auto-gamma -modulate 120,50,100 \\)  \\( -size #{width}x#{height} -fill rgba\\(255,153,0,0.5\\) -draw 'rectangle 0,0 #{width},#{height}' \\) -compose multiply "#{@tempfile}"`
+	frame @tempfile, "Kelvin"
 end
 
 def tiltshift(input)
-
-		temp_file = Tempfile.new(["tiltshift", ".jpg"])
-	`convert \\( "#{input}" -gamma 0.75 -modulate 100,130 -contrast \\) \\( +clone -sparse-color Barycentric '0,0 black 0,%h white' -function polynomial 4,-4,1 -level 0,50% \\) -compose blur -set option:compose:args 5 -composite "#{temp_file.path}"`
-     temp_file.path
+	`convert \\( "#{input}" -gamma 0.75 -modulate 100,130 -contrast \\) \\( +clone -sparse-color Barycentric '0,0 black 0,%h white' -function polynomial 4,-4,1 -level 0,50% \\) -compose blur -set option:compose:args 5 -composite "#{@tempfile}"`
+     @tempfile
 end
 
 def toaster(input) 
@@ -195,8 +290,18 @@ def border(input, options={})
 end
 
 def gotham(input)
-	temp_file = Tempfile.new(["gotham", ".jpg"])
 	border convert input, "-modulate 120,10,100 -fill '#222b6d' -colorize 20 -gamma 0.5 -contrast -contrast"
 end
 
-main()
+def cleanup()
+  File.delete @tempfile #Clean up temp file
+  File.delete @message_file
+end
+
+begin
+	main()
+    cleanup()
+rescue SystemExit, Interrupt
+  cleanup()
+  raise
+end
