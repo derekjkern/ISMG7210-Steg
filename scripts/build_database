@@ -37,7 +37,7 @@ def main
 		filters = {}
 
 
-		# filters[:baseline] = Proc.new { |i| baseline(i) }
+		filters[:baseline] = Proc.new { |i| baseline(i) }
 	
 		#Our conversions
 		# filters[:noise] = Proc.new { |i| noise(i) }
@@ -46,7 +46,7 @@ def main
 		# filters[:saturate] = Proc.new {|i| saturate(i)}
 		# filters[:contrast] = Proc.new {|i| contrast(i)}
 		# filters[:sigmoidal] = Proc.new {|i| sigmoidal(i)}
-		filters[:random] = Proc.new {|i| randomnoise(i)}
+		# filters[:random] = Proc.new {|i| randomnoise(i)}
 		
 		#Fred's Imagemagick Scripts http://www.fmwconcepts.com/imagemagick
 		# filters[:cartoon] = Proc.new {|i| cartoon(i)}
@@ -63,7 +63,7 @@ def main
 		# filters[:lucisarteffect] = Proc.new {|i| lucisarteffect(i)}
 
 		#Instagraph Scripts https://github.com/webarto/instagraph
-		filters[:gotham] = Proc.new { |i| gotham(i) }
+		# filters[:gotham] = Proc.new { |i| gotham(i) }
 		# filters[:toaster] = Proc.new { |i| toaster(i) }
 		# filters[:nashville] = Proc.new { |i| nashville(i) }
 		# filters[:lomo] = Proc.new { |i| lomo(i) }
@@ -136,7 +136,7 @@ def stego(input)
 	cover_file = Tempfile.new(["cover", ".jpg"])
 	FileUtils.cp(input, cover_file)
 
-	res = `steghide embed -cf \"#{input}" -ef #{@message_file} -p "guvf pynff fhpxf"`
+	res = `steghide embed -cf \"#{cover_file.path}" -ef #{@message_file} -p "guvf pynff fhpxf"`
 
 	cover_file.path
 end
