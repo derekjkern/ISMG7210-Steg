@@ -37,15 +37,16 @@ def main
 		filters = {}
 
 
-		filters[:baseline] = Proc.new { |i| baseline(i) }
+		# filters[:baseline] = Proc.new { |i| baseline(i) }
 	
 		#Our conversions
-		filters[:noise] = Proc.new { |i| noise(i) }
-		filters[:emboss] = Proc.new { |i| emboss(i) }
+		# filters[:noise] = Proc.new { |i| noise(i) }
+		# filters[:emboss] = Proc.new { |i| emboss(i) }
 		# filters[:blur] = Proc.new {|i| blur(i) }
 		# filters[:saturate] = Proc.new {|i| saturate(i)}
 		# filters[:contrast] = Proc.new {|i| contrast(i)}
 		# filters[:sigmoidal] = Proc.new {|i| sigmoidal(i)}
+		filters[:random] = Proc.new {|i| randomnoise(i)}
 		
 		#Fred's Imagemagick Scripts http://www.fmwconcepts.com/imagemagick
 		# filters[:cartoon] = Proc.new {|i| cartoon(i)}
@@ -138,6 +139,12 @@ def stego(input)
 	res = `steghide embed -cf \"#{input}" -ef #{@message_file} -p "guvf pynff fhpxf"`
 
 	cover_file.path
+end
+
+def randomnoise(input)
+	width, height = size(input)
+	`convert -size #{width}x#{height} xc: +noise random #{@tempfile}`
+	@tempfile
 end
 
 def noise(input)
